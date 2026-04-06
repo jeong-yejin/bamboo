@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 export default function Layout({ children }) {
   const { pathname } = useLocation();
-  const isHome = pathname === '/';
+  const isHome = pathname === '/' || pathname === '/conversation';
 
   return (
     <div className="min-h-screen bg-dark">

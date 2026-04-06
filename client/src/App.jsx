@@ -1,8 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Feed from './pages/Feed';
-import Write from './pages/Write';
-import PostDetail from './pages/PostDetail';
 import Conversation from './pages/Conversation';
 
 export default function App() {
@@ -11,8 +9,6 @@ export default function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Feed />} />
-          <Route path="/write" element={<Write />} />
-          <Route path="/post/:id" element={<PostDetail />} />
           <Route path="/conversation" element={<Conversation />} />
         </Routes>
       </Layout>

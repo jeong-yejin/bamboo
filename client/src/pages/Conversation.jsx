@@ -1,20 +1,45 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+const STORAGE_KEY = 'bamboo_chats';
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
+  });
+}
+
+function loadChats() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+
 export default function Conversation() {
   const location = useLocation();
   const navigate = useNavigate();
-  const initialContent = location.state?.content ?? '';
 
-  const [messages, setMessages] = useState(
-    initialContent ? [{ role: 'user', text: initialContent }] : []
-  );
+  const { id, createdAt } = location.state ?? {};
+
+  // Load messages from localStorage by id
+  const [messages, setMessages] = useState(() => {
+    if (!id) return [];
+    const chat = loadChats().find((c) => c.id === id);
+    return chat?.messages ?? [];
+  });
+
   const [reply, setReply] = useState('');
   const bottomRef = useRef(null);
 
-  const title = initialContent.length > 20
-    ? initialContent.slice(0, 20) + '…'
-    : initialContent;
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    if (!id) return;
+    const chats = loadChats();
+    const idx = chats.findIndex((c) => c.id === id);
+    if (idx !== -1) {
+      chats[idx].messages = messages;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
+    }
+  }, [messages, id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,6 +60,8 @@ export default function Conversation() {
     }
   }
 
+  const title = createdAt ? formatDate(createdAt) : '';
+
   return (
     <div className="min-h-screen bg-dark flex flex-col">
       {/* Header */}
@@ -45,14 +72,14 @@ export default function Conversation() {
         <button
           onClick={() => navigate(-1)}
           className="text-text-faint hover:text-white transition-colors p-1 -ml-1"
-          aria-label="뒤로"
+          aria-label="Back"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
 
-        <span className="text-sm font-medium text-white/80 truncate max-w-[200px]">{title}</span>
+        <span className="text-sm font-medium text-white/80 truncate max-w-[220px]">{title}</span>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 text-text-faint text-xs">
@@ -99,7 +126,8 @@ export default function Conversation() {
       </div>
 
       {/* Reply input */}
-      <div className="sticky bottom-0 z-20 px-4 pb-6 pt-3 max-w-xl w-full mx-auto"
+      <div
+        className="sticky bottom-0 z-20 px-4 pb-6 pt-3 max-w-xl w-full mx-auto"
         style={{ background: 'linear-gradient(to top, rgba(10,12,20,1) 70%, transparent)' }}
       >
         <form onSubmit={handleReplySubmit}>
@@ -111,7 +139,7 @@ export default function Conversation() {
               value={reply}
               onChange={(e) => setReply(e.target.value)}
               onKeyDown={handleReplyKeyDown}
-              placeholder="회신하다..."
+              placeholder="Reply..."
               className="flex-1 bg-transparent text-[14px] text-text-primary placeholder-white/25 focus:outline-none tracking-snug"
               autoFocus
             />
@@ -121,10 +149,9 @@ export default function Conversation() {
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium tracking-tight transition-all duration-200 shrink-0
                 ${reply.trim()
                   ? 'bg-white text-black hover:bg-white/90 shadow-[0_0_20px_rgba(255,255,255,0.15)]'
-                  : 'bg-white/10 text-white/30 cursor-not-allowed'
-                }`}
+                  : 'bg-white/10 text-white/30 cursor-not-allowed'}`}
             >
-              찾다
+              Send
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
